@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     services:
       db:
         image: postgres:13
@@ -17,10 +18,12 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: paymentdb
+
       zookeeper:
         image: confluentinc/cp-zookeeper:latest
         ports:
           - 2181:2181
+
       kafka:
         image: wurstmeister/kafka:latest
         ports:
@@ -28,27 +31,24 @@ jobs:
         env:
           KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
           KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-
+          
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install Docker Compose
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
 
       - name: Build Docker images
-        run: |
-          docker-compose build
+        run: docker-compose build
 
       - name: Run tests
         run: |
           docker-compose run auth go test ./...
           docker-compose run payment go test ./...
-
+          
       - name: Deploy
         if: github.ref == 'refs/heads/main'
-        run: |
-          docker-compose up -d
+        run: docker-compose up -d
