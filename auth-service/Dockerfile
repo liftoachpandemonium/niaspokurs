@@ -1,28 +1,21 @@
-# Используем базовый образ Go
-FROM golang:1.20 AS builder
+# Dockerfile для auth-service
+FROM golang:1.20-alpine
 
-# Установим рабочую директорию
 WORKDIR /app
 
-# Копируем go.mod и go.sum для загрузки зависимостей
-COPY go.mod go.sum ./
-
-# Загружаем зависимости
+# Копируем и устанавливаем зависимости
+COPY go.mod ./
+COPY go.sum ./
 RUN go mod download
 
-# Копируем весь исходный код
+# Копируем остальной код
 COPY . .
 
 # Собираем приложение
-RUN go build -o auth-service .
+RUN go build -o auth-service
 
-# Используем легкий образ для финальной сборки
-FROM alpine:latest
+# Устанавливаем переменные окружения для работы с тестами, если необходимо
+ENV CGO_ENABLED=0
 
-WORKDIR /root/
-
-# Копируем скомпилированное приложение
-COPY --from=builder /app/auth-service .
-
-# Запускаем приложение
+# Команда по умолчанию
 CMD ["./auth-service"]
